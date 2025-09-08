@@ -1,9 +1,9 @@
-# DEPLOYMENT PIPELINE - Maps to AWS CodeDeploy
+# DEPLOYMENT PIPELINE - Maps to AWS CodeDeploy + CodeBuild combined
 name: Deploy Pipeline
 
 on:
   workflow_run:
-    workflows: ["Build Pipeline"]
+    workflows: ["Test Pipeline"]
     types: [completed]
     branches: [main]
 
@@ -13,19 +13,35 @@ permissions:
   id-token: write
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     
     steps:
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
+    # SOURCE STAGE
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    # BUILD ENVIRONMENT SETUP
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        name: build-files
-        path: ./build
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
         
+    # BUILD STAGE
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+      
+    - name: Build application
+      working-directory: ./frontend
+      run: npm run build
+      
+    # DEPLOYMENT STAGE
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./build
+        publish_dir: ./frontend/build
