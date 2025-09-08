@@ -47,3 +47,11 @@ jobs:
       with:
         name: build-files
         path: frontend/build/  # These files ready for deployment
+        
+    # DEPLOYMENT STAGE - equivalent to CodeDeploy to S3 + CloudFront
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'  # Only deploy from main branch
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./frontend/build
