@@ -1,0 +1,49 @@
+# Narri CI/CD Pipeline
+# Maps to AWS CodePipeline (orchestrates the entire workflow)
+name: Narri CI/CD Pipeline
+
+# Trigger configuration - similar to CodePipeline source triggers
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest  # Similar to CodeBuild compute environment
+    
+    steps:
+    # SOURCE STAGE - equivalent to AWS CodeCommit/GitHub source action
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    # BUILD ENVIRONMENT SETUP - like CodeBuild environment preparation
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'  # Similar to CodeBuild caching for faster builds
+        cache-dependency-path: frontend/package-lock.json
+        
+    # DEPENDENCY INSTALLATION - CodeBuild install phase
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci  # npm ci is faster/reliable for CI (vs npm install)
+      
+    # TEST STAGE - CodeBuild test reports integration
+    - name: Run tests
+      working-directory: ./frontend
+      run: npm test -- --coverage --watchAll=false
+      
+    # BUILD STAGE - CodeBuild build phase (compile/bundle)
+    - name: Build application
+      working-directory: ./frontend
+      run: npm run build  # Creates production-ready static files
+      
+    # ARTIFACT STORAGE - equivalent to S3 artifact store in CodePipeline
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-files
+        path: frontend/build/  # These files ready for deployment
