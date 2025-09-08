@@ -43,7 +43,7 @@ jobs:
       
     # ARTIFACT STORAGE - equivalent to S3 artifact store in CodePipeline
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-files
         path: frontend/build/  # These files ready for deployment
